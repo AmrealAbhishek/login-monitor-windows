@@ -11,7 +11,7 @@ $ErrorActionPreference = "Stop"
 
 # Configuration
 $AppName = "LoginMonitorPRO"
-$RepoUrl = "https://github.com/AAbhishekk/login-monitor-windows"
+$RepoUrl = "https://github.com/AmrealAbhishek/login-monitor-windows"
 $InstallDir = "$env:APPDATA\LoginMonitorPRO"
 $ScriptsDir = "$InstallDir\scripts"
 $LogDir = "$InstallDir\logs"
@@ -106,7 +106,7 @@ function Download-Scripts {
         "scripts/pro_monitor.py"
     )
 
-    $baseUrl = "https://raw.githubusercontent.com/AAbhishekk/login-monitor-windows/main"
+    $baseUrl = "https://raw.githubusercontent.com/AmrealAbhishek/login-monitor-windows/main"
 
     foreach ($file in $files) {
         $url = "$baseUrl/$file"

@@ -1,6 +1,6 @@
 # Login Monitor PRO - Windows Edition
 # Uninstaller
-# Run: irm https://raw.githubusercontent.com/AAbhishekk/login-monitor-windows/main/uninstall.ps1 | iex
+# Run: irm https://raw.githubusercontent.com/AmrealAbhishek/login-monitor-windows/main/uninstall.ps1 | iex
 
 $ErrorActionPreference = "SilentlyContinue"
 

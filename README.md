@@ -26,26 +26,26 @@ Monitor your Windows PC from anywhere using the Login Monitor PRO mobile app.
 Open PowerShell and run:
 
 ```powershell
-irm https://raw.githubusercontent.com/AAbhishekk/login-monitor-windows/main/install.ps1 | iex
+irm https://raw.githubusercontent.com/AmrealAbhishek/login-monitor-windows/main/install.ps1 | iex
 ```
 
 Or with email:
 
 ```powershell
-irm https://raw.githubusercontent.com/AAbhishekk/login-monitor-windows/main/install.ps1 | iex; Install -Email "your@email.com"
+irm https://raw.githubusercontent.com/AmrealAbhishek/login-monitor-windows/main/install.ps1 | iex; Install -Email "your@email.com"
 ```
 
 ## Quick Uninstall (One-Line)
 
 ```powershell
-irm https://raw.githubusercontent.com/AAbhishekk/login-monitor-windows/main/uninstall.ps1 | iex
+irm https://raw.githubusercontent.com/AmrealAbhishek/login-monitor-windows/main/uninstall.ps1 | iex
 ```
 
 ## Manual Installation
 
 1. **Download the scripts:**
    ```powershell
-   git clone https://github.com/AAbhishekk/login-monitor-windows.git
+   git clone https://github.com/AmrealAbhishek/login-monitor-windows.git
    cd login-monitor-windows
    ```
 
