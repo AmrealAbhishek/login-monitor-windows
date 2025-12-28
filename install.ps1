@@ -103,7 +103,8 @@ function Download-Scripts {
         "config.py",
         "scripts/screen_watcher.py",
         "scripts/command_listener.py",
-        "scripts/pro_monitor.py"
+        "scripts/pro_monitor.py",
+        "scripts/app_tracker.py"
     )
 
     $baseUrl = "https://raw.githubusercontent.com/AmrealAbhishek/login-monitor-windows/main"
